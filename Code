@@ -1,0 +1,28 @@
+#include "Ultrasonic.h"       //Δηλώνουμε οτι θα χρησιμοποιήσουμε τη βιβλιοθήκη έτοιμου κώδικα "Ultrasonic"
+#include <MIDI.h>             //Δηλώνουμε οτι θα χρησιμοποιήσουμε τη βιβλιοθήκη έτοιμου κώδικα "MIDI"
+
+Ultrasonic ultrasonic(2, 3);  //Δηλώνουμε τα Pins του Arduino στα οποία έχουμε συνδέσει το Trigger και το Echo Pin αντίστοιχα
+int distance = 0;             //Ορίζουμε τη μεταβλητή της απόστασης "distance" και της δίνουμε αρχική τιμή 0
+int midiMapped = 0;           //Ορίζουμε τη μεταβλητή της τρέχουσας τιμής MIDI "midiMapped" και της δίνουμε αρχική τιμή 0
+int lastmidiMapped = 0;       //Ορίζουμε τη μεταβλητή της προηγούμενης τιμής MIDI "lastmidiMapped" και της δίνουμε αρχική τιμή 0
+
+
+void setup() {
+  Serial.begin(115200);       //Δηλώνουμε να ξεκινήσει η λειτουργία σειριακής επικοινωνίας "Serial.begin" με τη συσκευή που έχομε συνδέσει το Arduino
+}
+
+void loop() {
+  float x  = ultrasonic.read(CM);             //Διαβάζουμε την τιμή της απόστασης η οποία μετατρέπεται σε CM απο την εντολή "ultrasonic.read" της βιβλιοθήκης "Ultrasonic"
+  midiMapped = map(x, 5, 25, 0, 127);         //Μετατρέπουμε το ευρος τιμών απο 5-25 εκατοστά σε τιμές MIDI απο 0-127
+  if (lastmidiMapped != midiMapped) {         //Συγκρινουμε την τρέχουσα τιμή MIDI με την προηγούμενη για να ελέγξουμε αν έχει αλλάξει η απόσταση
+    if (midiMapped >= 0 && midiMapped <= 127) //Ορίζουμε το έυρος τιμών MIDI που θα διαβάζει ο αισθητήρας
+      MIDImessage(176, 1, midiMapped);        //Δημιουργούμε ένα πακέτο τιμών με 3 bytes : το 176 που είναι η εντολή MIDI Control Change , το κανάλι MIDI 1 , την τιμή MIDI που διαβάζει ο αισθητήρας
+    lastmidiMapped = midiMapped;              //Ορίζουμε την προηγούμενη τιμή = με την τωρινή ώστε οταν διαβάσει άλλη τιμή να την αντικαταστήσει με την καινούρια
+  }
+}
+
+void MIDImessage(byte command, byte data1, byte data2) {  //Στέλνουμε τα δέδομένα MIDI με τα 3 bytes απο το MIDImessage που φτιάξαμε παραπάνω
+Serial.write(command);                 //Στέλνουμε την τιμή 176 που είναι η εντολή MIDI Control Change
+Serial.write(data1);                   //To MIDI κανάλι 1 στο οποίο θα στέλνουμε την τιμή MIDI
+Serial.write(data2);                   //Την τρέχουσα τιμή MIDI που διαβάζει ο αισθητήρας
+}
